@@ -456,14 +456,27 @@ footer a:hover{color:var(--gold-soft)}
   var APK_NAME = "azkaari.apk";
   var APK_B64  = "__APKDATA__";   // نسخة مدمجة داخل الصفحة (لو موجودة)
 
-  /* ====== عداد التحميلات (CountAPI) ======
-     namespace/key مميزين لموقعك — غيّرهم لو حابب، بس سيبهم زي ما هما شغالين تمام.
-     العداد الحقيقي بيبدأ من صفر عند CountAPI، وإحنا بنضيفله 100 وقت العرض
+  /* ====== عداد التحميلات (CounterAPI) ======
+     ملحوظة: كانت الصفحة بتستخدم countapi.xyz لكن الخدمة دي اتقفلت خالص من صاحبها
+     (بقى الرابط مش شغال نهائي)، فده كان سبب إن العداد مكانش بيتحرك.
+     استبدلناها بـ CounterAPI (counterapi.dev) وهي شغالة ومجانية ومن غير تسجيل.
+     namespace/name مميزين لموقعك — غيّرهم لو حابب، بس سيبهم زي ما هما شغالين تمام.
+     العداد الحقيقي بيبدأ من صفر عند السيرفر، وإحنا بنضيفله 100 وقت العرض بس
      عشان يظهر للزوار إنه بدأ من 100. */
-  var COUNTAPI_NAMESPACE = "azkaari-app";
-  var COUNTAPI_KEY       = "downloads";
+  var COUNTER_NAMESPACE = "azkaari-app";
+  var COUNTER_NAME       = "downloads";
+  var COUNTER_BASE       = "https://api.counterapi.dev/v1/" + COUNTER_NAMESPACE + "/" + COUNTER_NAME;
   var COUNTAPI_OFFSET    = 100;
   var dlCountEl = document.getElementById("dlCount");
+
+  function extractCount(data){
+    if (!data) return null;
+    var v = (data.count != null) ? data.count
+          : (data.Count != null) ? data.Count
+          : (data.value != null) ? data.value
+          : null;
+    return (typeof v === "number") ? v : null;
+  }
 
   function showCount(raw){
     if (dlCountEl && typeof raw === "number") {
@@ -473,17 +486,17 @@ footer a:hover{color:var(--gold-soft)}
 
   function loadCount(){
     if (!dlCountEl) return;
-    fetch("https://api.countapi.xyz/get/" + COUNTAPI_NAMESPACE + "/" + COUNTAPI_KEY)
+    fetch(COUNTER_BASE)
       .then(function(r){ return r.json(); })
-      .then(function(data){ showCount(data && data.value || 0); })
-      .catch(function(){ /* السيرفر مش متاح، سيبها زي ما هي */ });
+      .then(function(data){ showCount(extractCount(data) || 0); })
+      .catch(function(err){ console.warn("تعذّر جلب عداد التحميلات:", err); });
   }
 
   function bumpCount(){
-    fetch("https://api.countapi.xyz/hit/" + COUNTAPI_NAMESPACE + "/" + COUNTAPI_KEY)
+    fetch(COUNTER_BASE + "/up")
       .then(function(r){ return r.json(); })
-      .then(function(data){ showCount(data && data.value || 0); })
-      .catch(function(){ /* السيرفر مش متاح */ });
+      .then(function(data){ showCount(extractCount(data)); })
+      .catch(function(err){ console.warn("تعذّر تحديث عداد التحميلات:", err); });
   }
 
   loadCount();
